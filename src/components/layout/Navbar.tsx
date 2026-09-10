@@ -12,8 +12,8 @@ export function Navbar() {
   const links = [
     { href: "/donate", label: "Donate" },
     { href: "/organizations", label: "Find Help" },
-    { href: "/recipient", label: "Recipients" },
     { href: "/dashboard", label: "Impact" },
+    { href: "/recipient", label: "Recipients" },
   ];
 
   return (
