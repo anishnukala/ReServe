@@ -10,8 +10,7 @@ export function Footer() {
       <div className="container footer-main">
         <div className="footer-brand-block">
           <Link href="/" className="footer-brand">
-            <Image src="/logo/reserve-logo.png" width={58} height={58} alt="" />
-            <span>ReServe</span>
+            <Image className="brand-logo" src="/logo/reserve-navbar-logo.png" width={2172} height={724} alt="ReServe — Good food. Brighter tomorrows." />
           </Link>
           <p>Moving good food to nearby communities through smarter, faster local matching.</p>
           <Link href="/donate" className="footer-action">Donate surplus food <ArrowRight aria-hidden="true" /></Link>

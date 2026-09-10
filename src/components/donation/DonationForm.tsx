@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, LocateFixed, Sparkles } from "lucide-react";
+import { ArrowRight, CalendarClock, Loader2, LocateFixed, MapPin, PackageOpen, ShieldCheck, Sparkles } from "lucide-react";
 
 const defaultDeadline = () => {
   const now = new Date();
@@ -123,98 +123,52 @@ export function DonationForm() {
   }
 
   return (
-    <form className="form-card" onSubmit={submit}>
-      <div className="notice" style={{ marginBottom: 20 }}>
-        AI may help structure a description, but it must not determine whether food is safe. Verify allergens, handling, storage, and pickup details yourself.
+    <form className="donation-form" onSubmit={submit}>
+      <div className="donation-form__topbar">
+        <div><span>New donation</span><strong>Food rescue details</strong></div>
+        <ol aria-label="Donation form progress"><li className="active">Food</li><li>Pickup</li><li>Confirm</li></ol>
       </div>
 
-      <div className="field field-full" style={{ marginBottom: 20 }}>
-        <label htmlFor="description">Optional AI-assisted description</label>
-        <textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Example: We have about 6 trays of vegetarian pasta, refrigerated, roughly 35 pounds." />
-        <button className="btn btn-secondary" type="button" onClick={extractWithAI} disabled={aiLoading}>
-          {aiLoading ? <Loader2 size={17} /> : <Sparkles size={17} />} Structure description
-        </button>
-      </div>
+      <div className="donation-form__notice"><ShieldCheck aria-hidden="true" /><p><strong>You stay in control of safety.</strong> AI can organize your description, while allergens, storage, handling, and pickup details must be verified by you.</p></div>
 
-      <div className="form-grid">
-        <div className="field field-full">
-          <label htmlFor="foodName">Food name</label>
-          <input id="foodName" required value={form.foodName} onChange={(e) => setField("foodName", e.target.value)} />
+      <section className="donation-form__section">
+        <div className="form-section-intro"><span><Sparkles /></span><div><p>Quick start</p><h3>Describe the donation</h3><small>Write naturally and we will organize the details into the form.</small></div></div>
+        <div className="form-section-fields ai-assist">
+          <div className="field field-full"><label htmlFor="description">Food description <em>Optional</em></label><textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Example: Six refrigerated trays of vegetarian pasta, about 35 pounds total…" /></div>
+          <button className="btn btn-secondary ai-assist__button" type="button" onClick={extractWithAI} disabled={aiLoading}>{aiLoading ? <Loader2 className="spin" /> : <Sparkles />} Structure my details</button>
         </div>
+      </section>
 
-        <div className="field">
-          <label htmlFor="category">Food category</label>
-          <select id="category" value={form.foodCategory} onChange={(e) => setField("foodCategory", e.target.value)}>
-            <option value="prepared_food">Prepared food</option>
-            <option value="produce">Produce</option>
-            <option value="bakery">Bakery</option>
-            <option value="packaged_food">Packaged food</option>
-          </select>
+      <section className="donation-form__section">
+        <div className="form-section-intro"><span><PackageOpen /></span><div><p>Step 01</p><h3>Food details</h3><small>Help recipients quickly understand what is available.</small></div></div>
+        <div className="form-section-fields form-grid">
+          <div className="field field-full"><label htmlFor="foodName">Food name <b>*</b></label><input id="foodName" required value={form.foodName} onChange={(e) => setField("foodName", e.target.value)} /></div>
+          <div className="field"><label htmlFor="category">Category</label><select id="category" value={form.foodCategory} onChange={(e) => setField("foodCategory", e.target.value)}><option value="prepared_food">Prepared food</option><option value="produce">Produce</option><option value="bakery">Bakery</option><option value="packaged_food">Packaged food</option></select></div>
+          <div className="field"><label htmlFor="quantity">Quantity <span>lbs</span></label><input id="quantity" required min="0.1" step="0.1" type="number" value={form.quantityLbs} onChange={(e) => setField("quantityLbs", e.target.value)} /></div>
+          <div className="field"><label htmlFor="storage">Storage</label><select id="storage" value={form.storageType} onChange={(e) => setField("storageType", e.target.value)}><option value="ambient">Ambient</option><option value="refrigerated">Refrigerated</option><option value="frozen">Frozen</option></select></div>
+          <div className="field"><label htmlFor="allergens">Allergens</label><input id="allergens" value={form.allergens} onChange={(e) => setField("allergens", e.target.value)} placeholder="wheat, dairy, peanuts" /></div>
+          <div className="field field-full"><label htmlFor="tags">Dietary tags <em>Comma separated</em></label><input id="tags" value={form.dietaryTags} onChange={(e) => setField("dietaryTags", e.target.value)} placeholder="vegetarian, vegan, halal" /></div>
         </div>
+      </section>
 
-        <div className="field">
-          <label htmlFor="quantity">Quantity (lbs)</label>
-          <input id="quantity" required min="0.1" step="0.1" type="number" value={form.quantityLbs} onChange={(e) => setField("quantityLbs", e.target.value)} />
+      <section className="donation-form__section">
+        <div className="form-section-intro"><span><CalendarClock /></span><div><p>Step 02</p><h3>Pickup window</h3><small>Timing and location help us find a practical nearby match.</small></div></div>
+        <div className="form-section-fields form-grid">
+          <div className="field"><label htmlFor="preparedAt">Prepared or packaged</label><input id="preparedAt" type="datetime-local" value={form.preparedAt} onChange={(e) => setField("preparedAt", e.target.value)} /></div>
+          <div className="field"><label htmlFor="deadline">Pickup deadline <b>*</b></label><input id="deadline" required type="datetime-local" value={form.pickupDeadline} onChange={(e) => setField("pickupDeadline", e.target.value)} /></div>
+          <div className="field"><label htmlFor="lat">Latitude</label><input id="lat" required type="number" step="any" value={form.latitude} onChange={(e) => setField("latitude", e.target.value)} /></div>
+          <div className="field"><label htmlFor="lng">Longitude</label><input id="lng" required type="number" step="any" value={form.longitude} onChange={(e) => setField("longitude", e.target.value)} /></div>
+          <div className="location-action field-full"><MapPin /><span>Use your precise pickup point for better nearby matches.</span><button className="btn btn-outline" type="button" onClick={useMyLocation}><LocateFixed /> Use my location</button></div>
         </div>
+      </section>
 
-        <div className="field">
-          <label htmlFor="storage">Storage type</label>
-          <select id="storage" value={form.storageType} onChange={(e) => setField("storageType", e.target.value)}>
-            <option value="ambient">Ambient</option>
-            <option value="refrigerated">Refrigerated</option>
-            <option value="frozen">Frozen</option>
-          </select>
-        </div>
+      <section className="donation-form__section donation-form__section--confirm">
+        <div className="form-section-intro"><span><ShieldCheck /></span><div><p>Step 03</p><h3>Confirm details</h3><small>Review the information before ReServe evaluates matches.</small></div></div>
+        <div className="form-section-fields"><label className="checkbox confirmation"><input type="checkbox" checked={form.donorSafetyConfirmed} onChange={(e) => setField("donorSafetyConfirmed", e.target.checked)} /><span><strong>I confirm these details are accurate.</strong> Safety-critical decisions remain with the donor and receiving organization.</span></label></div>
+      </section>
 
-        <div className="field">
-          <label htmlFor="preparedAt">Prepared / packaged time</label>
-          <input id="preparedAt" type="datetime-local" value={form.preparedAt} onChange={(e) => setField("preparedAt", e.target.value)} />
-        </div>
-
-        <div className="field field-full">
-          <label htmlFor="deadline">Pickup deadline</label>
-          <input id="deadline" required type="datetime-local" value={form.pickupDeadline} onChange={(e) => setField("pickupDeadline", e.target.value)} />
-        </div>
-
-        <div className="field">
-          <label htmlFor="allergens">Allergens</label>
-          <input id="allergens" value={form.allergens} onChange={(e) => setField("allergens", e.target.value)} placeholder="wheat, dairy, peanuts" />
-        </div>
-
-        <div className="field">
-          <label htmlFor="tags">Dietary tags</label>
-          <input id="tags" value={form.dietaryTags} onChange={(e) => setField("dietaryTags", e.target.value)} placeholder="vegetarian, vegan, halal" />
-        </div>
-
-        <div className="field">
-          <label htmlFor="lat">Latitude</label>
-          <input id="lat" required type="number" step="any" value={form.latitude} onChange={(e) => setField("latitude", e.target.value)} />
-        </div>
-
-        <div className="field">
-          <label htmlFor="lng">Longitude</label>
-          <input id="lng" required type="number" step="any" value={form.longitude} onChange={(e) => setField("longitude", e.target.value)} />
-        </div>
-
-        <div className="field field-full">
-          <button className="btn btn-outline" type="button" onClick={useMyLocation}><LocateFixed size={17} /> Use my location</button>
-        </div>
-
-        <div className="field field-full">
-          <label className="checkbox">
-            <input type="checkbox" checked={form.donorSafetyConfirmed} onChange={(e) => setField("donorSafetyConfirmed", e.target.checked)} />
-            <span>I confirm that the information I entered is accurate and that safety-critical details are not being delegated to the matching or AI system.</span>
-          </label>
-        </div>
-      </div>
-
-      {error && <p className="error">{error}</p>}
-
-      <div className="actions">
-        <button className="btn btn-primary" type="submit" disabled={loading}>
-          {loading ? <Loader2 size={18} /> : null} Find Best Match
-        </button>
-      </div>
+      {error && <div className="form-error" role="alert">{error}</div>}
+      <div className="donation-form__footer"><p><strong>Ready to find a partner?</strong><span>We will rank compatible organizations and explain why they fit.</span></p><button className="btn btn-primary" type="submit" disabled={loading}>{loading ? <Loader2 className="spin" /> : null} Find Best Match <ArrowRight /></button></div>
     </form>
   );
 }

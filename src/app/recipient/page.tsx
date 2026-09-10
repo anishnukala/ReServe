@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
+import { PageHero } from "@/components/layout/PageHero";
 
 export default function RecipientPage() {
   const demoRows = [
@@ -8,21 +10,19 @@ export default function RecipientPage() {
   ];
 
   return (
-    <div className="container">
-      <div className="page-head">
-        <div className="eyebrow">Recipient prototype</div>
-        <h1>Donation inbox.</h1>
-        <p>Recipient organizations can review compatible donations, confirm their real capacity and storage ability, and accept only what they can safely handle.</p>
-      </div>
-      <div className="notice" style={{ marginBottom: 18 }}>Prototype simulation. Replace these rows with recipient-specific Supabase queries after authentication is added.</div>
-      <div className="card table-wrap" style={{ marginBottom: 24 }}>
+    <div className="inner-page">
+      <PageHero eyebrow="Recipient workspace" title={<>A clearer <span>donation inbox.</span></>} description="Review compatible donations, confirm your capacity, and coordinate food pickups your organization can safely handle." image="/impact-assets/get-help-action.png" imageAlt="A community support illustration" highlights={["Capacity first", "Pickup deadlines", "Clear food details"]} tone="orange" />
+      <section className="page-content"><div className="container">
+      <div className="section-title section-title--row"><div><p>Available now</p><h2>Compatible donations</h2></div><span>Food matched to the needs and storage capacity of your organization.</span></div>
+      <div className="notice notice--compact">This recipient workspace currently uses illustrative donation data.</div>
+      <div className="recipient-table-card table-wrap">
         <table>
           <thead><tr><th>Food</th><th>Quantity</th><th>Storage</th><th>Deadline</th><th>Status</th></tr></thead>
-          <tbody>{demoRows.map((row) => <tr key={row.food}><td>{row.food}</td><td>{row.qty}</td><td>{row.storage}</td><td>{row.deadline}</td><td>{row.status}</td></tr>)}</tbody>
+          <tbody>{demoRows.map((row) => <tr key={row.food}><td><strong>{row.food}</strong></td><td>{row.qty}</td><td>{row.storage}</td><td>{row.deadline}</td><td><span className={`status-badge status-badge--${row.status.toLowerCase()}`}>{row.status}</span></td></tr>)}</tbody>
         </table>
       </div>
-      <Link className="btn btn-primary" href="/organizations">Manage organization discovery</Link>
-      <div style={{ height: 70 }} />
+      <div className="content-actions"><Link className="btn btn-primary" href="/organizations">Explore local organizations <ArrowRight /></Link></div>
+      </div></section>
     </div>
   );
 }
