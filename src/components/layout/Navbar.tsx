@@ -20,9 +20,7 @@ export function Navbar() {
     <header className="navbar">
       <div className="container nav-inner">
         <Link className="brand" href="/" onClick={() => setOpen(false)}>
-          <span className="brand-symbol" aria-hidden="true"><Image src="/logo/reserve-logo-transparent.png" width={1374} height={1145} alt="" priority /></span>
-          <span className="brand-wordmark" aria-hidden="true"><Image src="/logo/reserve-logo-transparent.png" width={1374} height={1145} alt="" priority /></span>
-          <span className="sr-only">ReServe — Good food. Brighter tomorrows.</span>
+          <Image className="brand-logo" src="/logo/reserve-navbar-logo.png" width={2172} height={724} alt="ReServe — Good food. Brighter tomorrows." priority />
         </Link>
         <nav className="nav-links" aria-label="Main navigation">
           {links.map((link) => <Link className={pathname.startsWith(link.href) ? "active" : ""} href={link.href} key={link.href}>{link.label}</Link>)}

@@ -3,7 +3,7 @@ import ImpactShelf from "@/components/ImpactShelf";
 import NationalImpact from "@/components/NationalImpact";
 import RescueActions from "@/components/RescueActions";
 import Link from "next/link";
-import { ArrowRight, MapPin } from "lucide-react";
+import { ArrowRight, Leaf, MapPin } from "lucide-react";
 
 export default function HomePage() {
   return (
@@ -11,7 +11,7 @@ export default function HomePage() {
       <section className="hero">
         <div className="container hero-grid">
           <div className="hero-copy">
-            <div className="eyebrow">Smart local food rescue</div>
+            <div className="eyebrow hero-eyebrow"><Leaf aria-hidden="true" /> Smart local food rescue</div>
             <h1>Good food. Greater impact.</h1>
             <p>
               ReServe helps donors move surplus food to compatible nearby community organizations using explainable matching based on need, storage, capacity, distance, and pickup feasibility.
