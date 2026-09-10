@@ -6,6 +6,8 @@ import type { Donation } from "@/types/donation";
 import type { MatchResult } from "@/types/match";
 import type { Rescue } from "@/types/rescue";
 import { RescueTimeline } from "@/components/rescue/RescueTimeline";
+import { PageHero } from "@/components/layout/PageHero";
+import { Clock3, PackageCheck, Utensils } from "lucide-react";
 
 export default function RescuePage() {
   const params = useParams<{ rescueId: string }>();
@@ -45,24 +47,20 @@ export default function RescuePage() {
     }
   }
 
-  if (!rescue) return <div className="container loading">Loading rescue…</div>;
+  if (!rescue) return <div className="route-loading"><div className="route-loading__mark" /><p>Loading rescue…</p></div>;
 
   return (
-    <div className="container">
-      <div className="page-head">
-        <div className="eyebrow">Rescue #{rescue.id}</div>
-        <h1>Track the rescue.</h1>
-        <p>{donation ? `${donation.quantityLbs} lbs of ${donation.foodName}` : "Donation"}{match ? ` → ${match.recipient.name}` : ""}</p>
+    <div className="inner-page">
+      <PageHero eyebrow={`Rescue #${rescue.id}`} title={<>Track every <span>handoff.</span></>} description={<>{donation ? `${donation.quantityLbs} lbs of ${donation.foodName}` : "Donation"}{match ? ` is headed to ${match.recipient.name}.` : " is ready to move."}</>} image="/impact-assets/artisan-bread-3d.png" imageAlt="A basket of artisan bread" highlights={["Live status", "Shared accountability", "Impact recorded"]} tone="orange" />
+      <section className="page-content"><div className="container">
+      <div className="rescue-stats">
+        <article><PackageCheck /><span>Quantity</span><strong>{rescue.quantityRescued} lbs</strong></article>
+        <article><Clock3 /><span>Current status</span><strong>{rescue.status.replaceAll("_", " ")}</strong></article>
+        <article><Utensils /><span>Estimated meals</span><strong>{Math.round(rescue.quantityRescued / 1.2)}</strong></article>
       </div>
 
-      <div className="grid-3" style={{ marginBottom: 20 }}>
-        <div className="card"><strong>Quantity</strong><div className="stat">{rescue.quantityRescued} lbs</div></div>
-        <div className="card"><strong>Status</strong><div className="stat" style={{ fontSize: "1.35rem" }}>{rescue.status.replaceAll("_", " ")}</div></div>
-        <div className="card"><strong>Estimated meals</strong><div className="stat">{Math.round(rescue.quantityRescued / 1.2)}</div><div className="small muted">Prototype estimate</div></div>
-      </div>
-
-      <div className="card" style={{ marginBottom: 70 }}>
-        <h2>Rescue timeline</h2>
+      <div className="timeline-card">
+        <div className="section-title"><p>Live progress</p><h2>Rescue timeline</h2></div>
         <RescueTimeline status={rescue.status} />
         {error && <p className="error">{error}</p>}
         <div className="actions">
@@ -71,6 +69,7 @@ export default function RescuePage() {
           {rescue.status === "DELIVERED" && <div className="success">Rescue completed. The impact dashboard can now count this donation.</div>}
         </div>
       </div>
+      </div></section>
     </div>
   );
 }

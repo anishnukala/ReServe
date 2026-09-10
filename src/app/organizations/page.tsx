@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { LocateFixed, Search } from "lucide-react";
+import { PageHero } from "@/components/layout/PageHero";
 
 type Place = {
   id: string;
@@ -50,14 +51,11 @@ export default function OrganizationsPage() {
   }
 
   return (
-    <div className="container">
-      <div className="page-head">
-        <div className="eyebrow">Location discovery</div>
-        <h1>Find nearby organizations.</h1>
-        <p>Use the official Places API to discover nearby organizations. ReServe-specific fields such as capacity, accepted foods, storage, and current need should be maintained separately.</p>
-      </div>
-
-      <form className="form-card" onSubmit={search} style={{ marginBottom: 24 }}>
+    <div className="inner-page">
+      <PageHero eyebrow="Find local support" title={<>Help is closer than <span>you think.</span></>} description="Discover food banks, pantries, shelters, and community organizations nearby. Search by need and location to find the right connection." image="/impact-assets/get-help-action.png" imageAlt="Hands joining around a heart and a community center" highlights={["Nearby results", "Trusted map links", "Community focused"]} tone="orange" />
+      <section className="page-content"><div className="container">
+        <div className="section-title"><p>Organization finder</p><h2>Search your community</h2><span>Enter an organization type and location to begin.</span></div>
+      <form className="form-card organization-search" onSubmit={search}>
         <div className="form-grid">
           <div className="field field-full"><label>Search</label><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="food bank, food pantry, shelter" /></div>
           <div className="field"><label>Latitude</label><input type="number" step="any" value={lat} onChange={(e) => setLat(e.target.value)} /></div>
@@ -70,19 +68,20 @@ export default function OrganizationsPage() {
         {error && <p className="error">{error}</p>}
       </form>
 
-      {source === "demo" && <div className="notice" style={{ marginBottom: 18 }}>Google API key is not configured, so this page is showing demo organizations.</div>}
-      <div className="grid-3" style={{ marginBottom: 15 }}>
+      {source === "demo" && <div className="notice notice--compact">Google API key is not configured, so this page is showing demo organizations.</div>}
+      <div className="organization-results">
         {places.map((place) => (
-          <div className="card google-result" key={place.id}>
+          <article className="google-result" key={place.id}>
+            <span className="result-marker"><LocateFixed aria-hidden="true" /></span>
             <h3>{place.displayName?.text || "Organization"}</h3>
             <div className="muted">{place.formattedAddress || "Address unavailable"}</div>
             {place.googleMapsUri && <a className="btn btn-secondary" href={place.googleMapsUri} target="_blank" rel="noreferrer">View in Google Maps</a>}
             <div className="small muted">Place ID: {place.id}</div>
-          </div>
+          </article>
         ))}
       </div>
       {source === "google" && <div className="powered">Places information provided by Google. Display and storage of Google Maps Platform content must follow Google's current terms.</div>}
-      <div style={{ height: 70 }} />
+      </div></section>
     </div>
   );
 }

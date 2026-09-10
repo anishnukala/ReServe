@@ -7,17 +7,17 @@ import { CheckCircle2, MapPin } from "lucide-react";
 export function MatchCard({ match, best, donation, onAccept, accepting }: { match: MatchResult; best?: boolean; donation: Donation; onAccept: (match: MatchResult) => void; accepting?: boolean }) {
   return (
     <article className={`match-card ${best ? "best" : ""}`}>
-      <div>
+      <div className="match-card__body">
         {best && <div className="eyebrow">Best match</div>}
-        <h2 style={{ marginBottom: 5 }}>{match.recipient.name}</h2>
-        <div className="muted"><MapPin size={15} style={{ verticalAlign: "text-bottom" }} /> {match.distanceMiles} miles · {match.recipient.address}</div>
+        <h2>{match.recipient.name}</h2>
+        <div className="match-location"><MapPin size={15} /> {match.distanceMiles} miles · {match.recipient.address}</div>
         <div className="reason-list">
           {match.reasons.map((reason) => <span className="pill" key={reason}><CheckCircle2 size={13} style={{ verticalAlign: "text-bottom" }} /> {reason}</span>)}
         </div>
         <p className="muted">{match.explanation}</p>
         <details>
-          <summary style={{ cursor: "pointer", fontWeight: 800, color: "var(--forest)" }}>Score breakdown</summary>
-          <div className="table-wrap" style={{ marginTop: 10 }}>
+          <summary>Score breakdown</summary>
+          <div className="table-wrap score-table">
             <table>
               <tbody>
                 <tr><td>Need</td><td>{match.breakdown.needScore}</td><td>30%</td></tr>
@@ -34,7 +34,7 @@ export function MatchCard({ match, best, donation, onAccept, accepting }: { matc
         </div>
         <p className="small muted">Donation: {donation.quantityLbs} lbs of {donation.foodName}</p>
       </div>
-      <div className="match-score" aria-label={`${match.finalScore} percent match`}>{Math.round(match.finalScore)}%</div>
+      <div className="match-score-wrap"><span>Match score</span><div className="match-score" style={{ "--score": `${Math.round(match.finalScore) * 3.6}deg` } as React.CSSProperties} aria-label={`${match.finalScore} percent match`}><i>{Math.round(match.finalScore)}%</i></div></div>
     </article>
   );
 }

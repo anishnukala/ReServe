@@ -123,16 +123,16 @@ export function DonationForm() {
   }
 
   return (
-    <form className="form-card" onSubmit={submit}>
-      <div className="notice" style={{ marginBottom: 20 }}>
+    <form className="form-card donation-form" onSubmit={submit}>
+      <div className="notice form-notice">
         AI may help structure a description, but it must not determine whether food is safe. Verify allergens, handling, storage, and pickup details yourself.
       </div>
 
-      <div className="field field-full" style={{ marginBottom: 20 }}>
+      <div className="field field-full ai-assist">
         <label htmlFor="description">Optional AI-assisted description</label>
         <textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Example: We have about 6 trays of vegetarian pasta, refrigerated, roughly 35 pounds." />
         <button className="btn btn-secondary" type="button" onClick={extractWithAI} disabled={aiLoading}>
-          {aiLoading ? <Loader2 size={17} /> : <Sparkles size={17} />} Structure description
+          {aiLoading ? <Loader2 className="spin" size={17} /> : <Sparkles size={17} />} Structure description
         </button>
       </div>
 
@@ -212,7 +212,7 @@ export function DonationForm() {
 
       <div className="actions">
         <button className="btn btn-primary" type="submit" disabled={loading}>
-          {loading ? <Loader2 size={18} /> : null} Find Best Match
+          {loading ? <Loader2 className="spin" size={18} /> : null} Find Best Match
         </button>
       </div>
     </form>
