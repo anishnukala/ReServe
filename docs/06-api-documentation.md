@@ -1,33 +1,16 @@
-# API Documentation
+# API routes
 
-## POST /api/donations
+- `POST /api/auth/signup`, `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`
+- `GET|POST /api/donations`
+- `POST /api/ai-search`
+- `POST /api/matches/:id/accept`
+- `POST /api/rescues/:id/pickup`, `POST /api/rescues/:id/deliver`
+- `GET|PUT /api/organizations/profile`
+- `GET|PUT /api/organizations/needs`
+- `GET /api/organizations/dashboard`
+- `GET /api/organizations/nearby?latitude=&longitude=&radius=&query=`
+- `GET /api/statistics/overview?range=`, `GET /api/statistics/trends?range=`, `GET /api/statistics/categories?range=`
+- `GET /api/statistics/organization/:id`
+- `GET /api/admin`, `PATCH /api/admin/users/:id/status`, `PATCH /api/admin/organizations/:id`
 
-Creates a donation.
-
-## POST /api/donations/:id/match
-
-Loads the donation and recipient preferences from MongoDB, then runs feasibility filters and ranking.
-
-## POST /api/matches/:id/accept
-
-Accepts a match and creates a rescue.
-
-## POST /api/rescues/:id/pickup
-
-Marks a rescue as picked up.
-
-## POST /api/rescues/:id/deliver
-
-Marks a rescue as delivered.
-
-## GET /api/dashboard/impact
-
-Returns total delivered food, estimated meals, rescue count, and average match time placeholder.
-
-## POST /api/places/search
-
-Server-side Google Places Text Search adapter. Returns a configuration error when the Google API key is unavailable.
-
-## POST /api/ai/extract-food
-
-Optional natural-language extraction. Falls back to a basic deterministic parser when OpenAI is disabled.
+Private routes return `401` without a valid session and `403` when the role or ownership check fails. Validation errors return `400`; duplicate emails return `409`.

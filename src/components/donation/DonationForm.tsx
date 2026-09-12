@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, CalendarClock, Loader2, LocateFixed, MapPin, PackageOpen, ShieldCheck, Sparkles } from "lucide-react";
+import dynamic from "next/dynamic";
+import { ArrowRight, CalendarClock, Loader2, LocateFixed, MapPin, PackageOpen, ShieldCheck } from "lucide-react";
+
+const LocationPickerMap = dynamic(() => import("@/components/maps/LocationPickerMap"), { ssr: false, loading: () => <div className="map-loading">Loading map…</div> });
 
 const defaultDeadline = () => {
   const now = new Date();
@@ -16,20 +19,21 @@ const defaultDeadline = () => {
 export function DonationForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [aiLoading, setAiLoading] = useState(false);
   const [error, setError] = useState("");
   const [description, setDescription] = useState("");
   const [form, setForm] = useState({
-    foodName: "Vegetarian pasta",
+    foodName: "",
     foodCategory: "prepared_food",
-    quantityLbs: "35",
+    quantityLbs: "",
     storageType: "refrigerated",
-    allergens: "wheat, dairy",
-    dietaryTags: "vegetarian",
+    allergens: "",
+    dietaryTags: "",
     preparedAt: "",
     pickupDeadline: defaultDeadline(),
-    latitude: "42.0266",
-    longitude: "-93.6465",
+    latitude: "",
+    longitude: "",
+    address: "",
+    searchRadiusMiles: "10",
     donorSafetyConfirmed: false,
   });
 
@@ -47,38 +51,9 @@ export function DonationForm() {
         setField("latitude", String(position.coords.latitude));
         setField("longitude", String(position.coords.longitude));
       },
-      () => setError("Location permission was denied. You can enter coordinates manually."),
+      (locationError) => setError(locationError.code === 1 ? "Location permission was denied. You can enter coordinates manually." : locationError.code === 2 ? "Your location is unavailable. Enter coordinates or try again." : "Location request timed out. Enter coordinates or try again."),
+      { enableHighAccuracy: true, timeout: 10_000 },
     );
-  }
-
-  async function extractWithAI() {
-    if (!description.trim()) return;
-    setAiLoading(true);
-    setError("");
-    try {
-      const res = await fetch("/api/ai/extract-food", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ description }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "AI extraction failed");
-
-      if (typeof data.result === "object" && data.result) {
-        const result = data.result as Record<string, unknown>;
-        if (typeof result.foodName === "string") setField("foodName", result.foodName);
-        if (typeof result.foodCategory === "string") setField("foodCategory", result.foodCategory);
-        if (typeof result.quantityLbs === "number") setField("quantityLbs", String(result.quantityLbs));
-        if (typeof result.storageType === "string" && ["ambient", "refrigerated", "frozen"].includes(result.storageType)) {
-          setField("storageType", result.storageType);
-        }
-        if (Array.isArray(result.dietaryTags)) setField("dietaryTags", result.dietaryTags.join(", "));
-      }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "AI extraction failed");
-    } finally {
-      setAiLoading(false);
-    }
   }
 
   async function submit(e: React.FormEvent) {
@@ -92,6 +67,7 @@ export function DonationForm() {
     setLoading(true);
     try {
       const payload = {
+        description,
         foodName: form.foodName,
         foodCategory: form.foodCategory,
         quantityLbs: Number(form.quantityLbs),
@@ -102,6 +78,8 @@ export function DonationForm() {
         pickupDeadline: new Date(form.pickupDeadline).toISOString(),
         latitude: Number(form.latitude),
         longitude: Number(form.longitude),
+        address: form.address || null,
+        searchRadiusMiles: Number(form.searchRadiusMiles),
         donorSafetyConfirmed: form.donorSafetyConfirmed,
       };
 
@@ -111,6 +89,7 @@ export function DonationForm() {
         body: JSON.stringify(payload),
       });
       const data = await res.json();
+      if (res.status === 401) { router.push("/login?next=/donate"); return; }
       if (!res.ok) throw new Error(data.error || "Unable to create donation");
 
       localStorage.setItem("reserve:lastDonation", JSON.stringify(data.donation));
@@ -132,10 +111,9 @@ export function DonationForm() {
       <div className="donation-form__notice"><ShieldCheck aria-hidden="true" /><p><strong>You stay in control of safety.</strong> AI can organize your description, while allergens, storage, handling, and pickup details must be verified by you.</p></div>
 
       <section className="donation-form__section">
-        <div className="form-section-intro"><span><Sparkles /></span><div><p>Quick start</p><h3>Describe the donation</h3><small>Write naturally and we will organize the details into the form.</small></div></div>
-        <div className="form-section-fields ai-assist">
-          <div className="field field-full"><label htmlFor="description">Food description <em>Optional</em></label><textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Example: Six refrigerated trays of vegetarian pasta, about 35 pounds total…" /></div>
-          <button className="btn btn-secondary ai-assist__button" type="button" onClick={extractWithAI} disabled={aiLoading}>{aiLoading ? <Loader2 className="spin" /> : <Sparkles />} Structure my details</button>
+        <div className="form-section-intro"><span><PackageOpen /></span><div><p>Summary</p><h3>Describe the donation</h3><small>This description helps the local semantic model compare your food with current organization needs.</small></div></div>
+        <div className="form-section-fields">
+          <div className="field field-full"><label htmlFor="description">Food description <b>*</b></label><textarea id="description" required minLength={3} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe the food, packaging, and relevant dietary details without making safety claims." /></div>
         </div>
       </section>
 
@@ -158,7 +136,10 @@ export function DonationForm() {
           <div className="field"><label htmlFor="deadline">Pickup deadline <b>*</b></label><input id="deadline" required type="datetime-local" value={form.pickupDeadline} onChange={(e) => setField("pickupDeadline", e.target.value)} /></div>
           <div className="field"><label htmlFor="lat">Latitude</label><input id="lat" required type="number" step="any" value={form.latitude} onChange={(e) => setField("latitude", e.target.value)} /></div>
           <div className="field"><label htmlFor="lng">Longitude</label><input id="lng" required type="number" step="any" value={form.longitude} onChange={(e) => setField("longitude", e.target.value)} /></div>
+          <div className="field"><label htmlFor="address">Pickup address <em>Optional</em></label><input id="address" value={form.address} onChange={(e) => setField("address", e.target.value)} /></div>
+          <div className="field"><label htmlFor="radius">Search radius</label><select id="radius" value={form.searchRadiusMiles} onChange={(e) => setField("searchRadiusMiles", e.target.value)}>{[5,10,15,25].map((miles) => <option key={miles} value={miles}>{miles} miles</option>)}</select></div>
           <div className="location-action field-full"><MapPin /><span>Use your precise pickup point for better nearby matches.</span><button className="btn btn-outline" type="button" onClick={useMyLocation}><LocateFixed /> Use my location</button></div>
+          {form.latitude && form.longitude && <div className="field-full"><LocationPickerMap latitude={Number(form.latitude)} longitude={Number(form.longitude)} radiusMiles={Number(form.searchRadiusMiles)} onChange={(latitude, longitude) => setForm((current) => ({ ...current, latitude: latitude.toFixed(6), longitude: longitude.toFixed(6) }))} /><small className="map-help">Drag the pin or click the map to adjust the pickup point.</small></div>}
         </div>
       </section>
 

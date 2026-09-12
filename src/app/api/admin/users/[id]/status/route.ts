@@ -1,0 +1,7 @@
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { requireUser } from "@/lib/auth/session";
+import { getMongoDatabase } from "@/lib/mongodb/client";
+import { getCollections } from "@/lib/mongodb/collections";
+const schema = z.object({ status: z.enum(["ACTIVE", "DISABLED", "SUSPENDED"]) });
+export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) { try { const auth = await requireUser(["admin"]); if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status }); const { id } = await context.params; if (id === auth.user._id) return NextResponse.json({ error: "Use another administrator to change your own account status." }, { status: 409 }); const input = schema.parse(await request.json()); const db = await getMongoDatabase(); if (!db) return NextResponse.json({ error: "MongoDB is not configured." }, { status: 503 }); const result = await getCollections(db).users.updateOne({ _id: id }, { $set: { status: input.status, updatedAt: new Date() } }); if (!result.matchedCount) return NextResponse.json({ error: "User not found." }, { status: 404 }); return NextResponse.json({ id, status: input.status }); } catch (error) { if (error instanceof z.ZodError) return NextResponse.json({ error: "Invalid account status." }, { status: 400 }); console.error(error); return NextResponse.json({ error: "Unable to update account." }, { status: 500 }); } }

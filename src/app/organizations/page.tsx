@@ -1,86 +1,21 @@
 "use client";
-
+import dynamic from "next/dynamic";
 import { useState } from "react";
 import { LocateFixed, Search } from "lucide-react";
 import { PageHero } from "@/components/layout/PageHero";
-
-type Place = {
-  id: string;
-  displayName?: { text?: string };
-  formattedAddress?: string;
-  googleMapsUri?: string;
-  location?: { latitude: number; longitude: number };
-};
-
+import type { NearbyOrganization } from "@/components/maps/OrganizationMap";
+const OrganizationMap = dynamic(() => import("@/components/maps/OrganizationMap").then((module) => module.OrganizationMap), { ssr: false, loading: () => <div className="map-panel loading">Loading map…</div> });
 export default function OrganizationsPage() {
-  const [query, setQuery] = useState("food bank");
-  const [lat, setLat] = useState("42.0266");
-  const [lng, setLng] = useState("-93.6465");
-  const [places, setPlaces] = useState<Place[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [source, setSource] = useState<"google" | "">("");
-
-  function locate() {
-    setError("");
-    navigator.geolocation?.getCurrentPosition(
-      (p) => { setLat(String(p.coords.latitude)); setLng(String(p.coords.longitude)); },
-      () => setError("Could not access your location."),
-    );
-  }
-
-  async function search(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    try {
-      const res = await fetch("/api/places/search", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query, latitude: Number(lat), longitude: Number(lng), radiusMeters: 16093 }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Search failed");
-      setPlaces(data.places || []);
-      setSource(data.source || "");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Search failed");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <div className="inner-page">
-      <PageHero eyebrow="Find local support" title={<>Help is closer than <span>you think.</span></>} description="Discover food banks, pantries, shelters, and community organizations nearby. Search by need and location to find the right connection." image="/impact-assets/get-help-action.png" imageAlt="Hands joining around a heart and a community center" highlights={["Nearby results", "Trusted map links", "Community focused"]} tone="orange" />
-      <section className="page-content"><div className="container">
-        <div className="section-title"><p>Organization finder</p><h2>Search your community</h2><span>Enter an organization type and location to begin.</span></div>
-      <form className="form-card organization-search" onSubmit={search}>
-        <div className="form-grid">
-          <div className="field field-full"><label>Search</label><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="food bank, food pantry, shelter" /></div>
-          <div className="field"><label>Latitude</label><input type="number" step="any" value={lat} onChange={(e) => setLat(e.target.value)} /></div>
-          <div className="field"><label>Longitude</label><input type="number" step="any" value={lng} onChange={(e) => setLng(e.target.value)} /></div>
-        </div>
-        <div className="actions">
-          <button className="btn btn-outline" type="button" onClick={locate}><LocateFixed size={17} /> Use my location</button>
-          <button className="btn btn-primary" type="submit" disabled={loading}><Search size={17} /> {loading ? "Searching…" : "Search"}</button>
-        </div>
-        {error && <p className="error">{error}</p>}
-      </form>
-
-      <div className="organization-results">
-        {places.map((place) => (
-          <article className="google-result" key={place.id}>
-            <span className="result-marker"><LocateFixed aria-hidden="true" /></span>
-            <h3>{place.displayName?.text || "Organization"}</h3>
-            <div className="muted">{place.formattedAddress || "Address unavailable"}</div>
-            {place.googleMapsUri && <a className="btn btn-secondary" href={place.googleMapsUri} target="_blank" rel="noreferrer">View in Google Maps</a>}
-            <div className="small muted">Place ID: {place.id}</div>
-          </article>
-        ))}
-      </div>
-      {source === "google" && <div className="powered">Places information provided by Google. Display and storage of Google Maps Platform content must follow Google's current terms.</div>}
-      </div></section>
-    </div>
-  );
+  const [query, setQuery] = useState(""); const [lat, setLat] = useState(""); const [lng, setLng] = useState(""); const [radius, setRadius] = useState("10");
+  const [organizations, setOrganizations] = useState<NearbyOrganization[]>([]); const [searched, setSearched] = useState(false); const [loading, setLoading] = useState(false); const [error, setError] = useState("");
+  function locate() { setError(""); if (!navigator.geolocation) return setError("This browser does not support location access. Enter coordinates instead."); navigator.geolocation.getCurrentPosition((position) => { setLat(String(position.coords.latitude)); setLng(String(position.coords.longitude)); }, (reason) => setError(reason.code === 1 ? "Location permission was denied. Enter coordinates instead." : reason.code === 2 ? "Your location is unavailable." : "Location request timed out."), { timeout: 10000 }); }
+  async function search(event: React.FormEvent) { event.preventDefault(); setLoading(true); setError(""); try { const params = new URLSearchParams({ latitude: lat, longitude: lng, radius, query }); const response = await fetch(`/api/organizations/nearby?${params}`); const body = await response.json(); if (!response.ok) throw new Error(body.error || "Search failed"); setOrganizations(body.organizations || []); setSearched(true); } catch (reason) { setError(reason instanceof Error ? reason.message : "Search failed"); } finally { setLoading(false); } }
+  const latitude = Number(lat), longitude = Number(lng);
+  return <div className="inner-page"><PageHero eyebrow="Find local support" title={<>Help is closer than <span>you think.</span></>} description="Find active ReServe food banks, pantries, shelters, and nonprofit organizations near you." image="/impact-assets/get-help-action.png" imageAlt="A community support illustration" highlights={["Live ReServe profiles", "Current needs", "OpenStreetMap"]} tone="orange" />
+    <section className="page-content"><div className="container"><div className="section-title"><p>Organization finder</p><h2>Search your community</h2><span>Results come from current ReServe organization profiles in MongoDB.</span></div>
+      <form className="form-card organization-search" onSubmit={search}><div className="form-grid"><div className="field field-full"><label>Name, category, or need</label><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Optional: prepared food, pantry…" /></div><div className="field"><label>Latitude</label><input required type="number" step="any" value={lat} onChange={(event) => setLat(event.target.value)} /></div><div className="field"><label>Longitude</label><input required type="number" step="any" value={lng} onChange={(event) => setLng(event.target.value)} /></div><div className="field"><label>Radius</label><select value={radius} onChange={(event) => setRadius(event.target.value)}>{[5,10,15,25].map((value) => <option key={value} value={value}>{value} miles</option>)}</select></div></div><div className="actions"><button className="btn btn-outline" type="button" onClick={locate}><LocateFixed size={17} /> Use my location</button><button className="btn btn-primary" disabled={loading}><Search size={17} />{loading ? "Searching…" : "Search"}</button></div>{error && <p className="error">{error}</p>}</form>
+      {searched && Number.isFinite(latitude) && Number.isFinite(longitude) && <OrganizationMap latitude={latitude} longitude={longitude} organizations={organizations} />}
+      <div className="organization-results">{organizations.map((organization) => <article className="google-result" key={organization.id}><span className="result-marker"><LocateFixed /></span><h3>{organization.name}</h3><p className="muted">{organization.address}</p><p><strong>{organization.distanceMiles} miles away</strong> · {organization.verified ? "Verified" : "Unverified"}</p><p className="small muted">Capacity: {organization.availableCapacityLbs ?? 0} lbs</p><p className="small muted">Current needs: {organization.currentNeeds.length ? organization.currentNeeds.map((need) => need.foodCategory).join(", ") : "None posted"}</p>{!organization.profileComplete && <span className="status-badge status-badge--matched">Incomplete profile</span>}</article>)}</div>
+      {searched && !loading && organizations.length === 0 && <div className="empty-state">No active ReServe organizations were found inside this radius.</div>}
+    </div></section></div>;
 }

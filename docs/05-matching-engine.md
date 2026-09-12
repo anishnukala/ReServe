@@ -1,34 +1,7 @@
-# Matching Engine
+# Matching engine
 
-## Phase 1: hard filters
+The engine first retrieves organizations within the donor’s chosen radius. It rejects unavailable organizations and those that fail category, storage, capacity, deadline, receiving-hour, or distance checks.
 
-A recipient is removed when:
+Eligible organizations receive scores using weights defined once in `src/lib/ai/scoring.ts`: semantic similarity 20%, current need 25%, food fit 15%, pickup feasibility 15%, distance 10%, capacity 10%, and verification/rating 5%.
 
-- the food category is not accepted
-- required storage is unavailable
-- capacity is below the donation quantity
-- distance exceeds the pickup radius
-- the donation deadline has passed
-- the recipient is closed during the pickup window
-
-## Phase 2: weighted ranking
-
-```text
-30% Need Match
-25% Pickup Feasibility
-20% Distance
-15% Capacity Match
-10% Food Preference Match
-```
-
-## Explainability
-
-The UI displays the final score, score breakdown, distance, and human-readable reasons.
-
-## Limitations
-
-- `needs_score` is prototype data until recipients update it from a real workflow.
-- operating hours are simplified to integer hours.
-- pickup feasibility is currently a heuristic, not a routing ETA.
-- distance uses the Haversine formula, not live driving distance.
-- the score does not determine food safety.
+Organization embeddings are cached with their model name and a hash of the source profile. Profile or needs updates invalidate that cache. Explanations are generated only from fields present in MongoDB.

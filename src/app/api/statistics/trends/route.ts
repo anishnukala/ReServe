@@ -1,0 +1,10 @@
+import { NextResponse } from "next/server";
+import { requireUser } from "@/lib/auth/session";
+import { getMongoDatabase } from "@/lib/mongodb/client";
+import { getCollections } from "@/lib/mongodb/collections";
+import { rangeStart } from "@/lib/statistics/config";
+import { donationScope, rescueScope } from "@/lib/statistics/scope";
+export async function GET(request: Request) { try { const auth = await requireUser(); if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status }); const db = await getMongoDatabase(); if (!db) return NextResponse.json({ error: "MongoDB is not configured." }, { status: 503 }); const collections = getCollections(db); const start = rangeStart(new URL(request.url).searchParams.get("range")); const [rescued, scores] = await Promise.all([
+  collections.rescues.aggregate<{ date: string; pounds: number; rescues: number }>([{ $match: { ...rescueScope(auth.user), status: "DELIVERED", ...(start ? { deliveredAt: { $gte: start } } : {}) } }, { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$deliveredAt" } }, pounds: { $sum: "$quantityRescued" }, rescues: { $sum: 1 } } }, { $project: { _id: 0, date: "$_id", pounds: 1, rescues: 1 } }, { $sort: { date: 1 } }]).toArray(),
+  collections.matches.aggregate<{ date: string; averageMatchScore: number }>([{ $lookup: { from: "donations", localField: "donationId", foreignField: "_id", as: "donation" } }, { $unwind: "$donation" }, { $match: Object.fromEntries(Object.entries({ ...donationScope(auth.user), ...(start ? { createdAt: { $gte: start } } : {}) }).map(([key, value]) => [`donation.${key}`, value])) }, { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }, averageMatchScore: { $avg: "$finalScore" } } }, { $project: { _id: 0, date: "$_id", averageMatchScore: { $round: ["$averageMatchScore", 1] } } }, { $sort: { date: 1 } }]).toArray(),
+]); return NextResponse.json({ rescued, scores }); } catch (error) { console.error(error); return NextResponse.json({ error: "Unable to calculate trends." }, { status: 500 }); } }

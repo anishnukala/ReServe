@@ -3,8 +3,10 @@ import { z } from "zod";
 import { getMongoDatabase } from "@/lib/mongodb/client";
 import { getCollections, type DonationDocument } from "@/lib/mongodb/collections";
 import { mapDonationDocument } from "@/lib/mongodb/mappers";
+import { requireUser } from "@/lib/auth/session";
 
 const donationSchema = z.object({
+  description: z.string().trim().min(3).max(1000),
   foodName: z.string().min(2).max(120),
   foodCategory: z.string().min(2).max(60),
   quantityLbs: z.number().positive().max(100000),
@@ -15,11 +17,15 @@ const donationSchema = z.object({
   pickupDeadline: z.string().datetime(),
   latitude: z.number().min(-90).max(90),
   longitude: z.number().min(-180).max(180),
+  address: z.string().trim().max(250).nullable().optional(),
+  searchRadiusMiles: z.number().refine((value) => [5, 10, 15, 25].includes(value), "Invalid search radius."),
   donorSafetyConfirmed: z.literal(true),
 });
 
 export async function POST(request: Request) {
   try {
+    const auth = await requireUser(["restaurant", "admin"]);
+    if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
     const body = donationSchema.parse(await request.json());
     const now = new Date();
 
@@ -34,7 +40,10 @@ export async function POST(request: Request) {
 
     const donation: DonationDocument = {
         _id: crypto.randomUUID(),
+        donorUserId: auth.user._id,
+        donorOrganizationId: auth.user.organizationId ?? null,
         donorOrgId: null,
+        description: body.description,
         foodName: body.foodName,
         foodCategory: body.foodCategory,
         quantityLbs: body.quantityLbs,
@@ -43,11 +52,15 @@ export async function POST(request: Request) {
         dietaryTags: body.dietaryTags,
         preparedAt: body.preparedAt ? new Date(body.preparedAt) : null,
         pickupDeadline: new Date(body.pickupDeadline),
-        latitude: body.latitude,
-        longitude: body.longitude,
+        location: { type: "Point", coordinates: [body.longitude, body.latitude] },
+        address: body.address ?? null,
+        searchRadiusMiles: body.searchRadiusMiles,
+        selectedOrganizationId: null,
+        selectedMatchId: null,
         donorSafetyConfirmed: body.donorSafetyConfirmed,
         status: "AVAILABLE",
         createdAt: now,
+        updatedAt: now,
     };
 
     await getCollections(db).donations.insertOne(donation);
@@ -63,11 +76,14 @@ export async function POST(request: Request) {
 
 export async function GET() {
   try {
+    const auth = await requireUser(["restaurant", "food_org", "admin"]);
+    if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
     const db = await getMongoDatabase();
     if (!db) return NextResponse.json({ error: "MongoDB is not configured." }, { status: 503 });
 
+    const filter: import("mongodb").Filter<import("@/lib/mongodb/collections").DonationDocument> = auth.user.role === "restaurant" ? { donorUserId: auth.user._id } : { status: { $in: ["AVAILABLE", "MATCHED"] } };
     const documents = await getCollections(db).donations
-      .find({ status: { $in: ["AVAILABLE", "MATCHED"] } })
+      .find(filter)
       .sort({ createdAt: -1 })
       .limit(50)
       .toArray();

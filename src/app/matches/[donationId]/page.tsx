@@ -2,16 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { MatchCard } from "@/components/matching/MatchCard";
 import type { Donation } from "@/types/donation";
-import type { MatchResult } from "@/types/match";
+import type { AiSearchMatch } from "@/types/match";
 import { PageHero } from "@/components/layout/PageHero";
+
+const MatchMap = dynamic(() => import("@/components/maps/MatchMap"), { ssr: false, loading: () => <div className="map-loading">Loading ranked map…</div> });
 
 export default function MatchesPage() {
   const params = useParams<{ donationId: string }>();
   const router = useRouter();
   const [donation, setDonation] = useState<Donation | null>(null);
-  const [matches, setMatches] = useState<MatchResult[]>([]);
+  const [matches, setMatches] = useState<AiSearchMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [accepting, setAccepting] = useState(false);
   const [error, setError] = useState("");
@@ -23,12 +26,13 @@ export default function MatchesPage() {
         const localDonation = stored ? (JSON.parse(stored) as Donation) : null;
         if (localDonation) setDonation(localDonation);
 
-        const res = await fetch(`/api/donations/${params.donationId}/match`, {
+        const res = await fetch("/api/ai-search", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ donation: localDonation }),
+          body: JSON.stringify({ donationId: params.donationId }),
         });
         const data = await res.json();
+        if (res.status === 401) { router.push(`/login?next=/matches/${params.donationId}`); return; }
         if (!res.ok) throw new Error(data.error || "Unable to find matches");
         setDonation(data.donation || localDonation);
         setMatches(data.matches || []);
@@ -39,9 +43,9 @@ export default function MatchesPage() {
       }
     }
     void load();
-  }, [params.donationId]);
+  }, [params.donationId, router]);
 
-  async function accept(match: MatchResult) {
+  async function accept(match: AiSearchMatch) {
     if (!donation) return;
     setAccepting(true);
     setError("");
@@ -54,8 +58,7 @@ export default function MatchesPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Unable to accept match");
       localStorage.setItem("reserve:lastMatch", JSON.stringify(match));
-      localStorage.setItem("reserve:lastRescue", JSON.stringify(data.rescue));
-      router.push(`/rescue/${data.rescue.id}`);
+      router.push("/dashboard");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unable to accept match");
     } finally {
@@ -72,6 +75,7 @@ export default function MatchesPage() {
       <div className="section-title section-title--row"><div><p>Recommended partners</p><h2>Compatible organizations</h2></div><span>Review why each organization fits before choosing where this donation goes.</span></div>
       {error && <p className="error">{error}</p>}
       {!matches.length && !error ? <div className="notice">No compatible organizations were found for this donation.</div> : null}
+      {donation && matches.length > 0 && <MatchMap latitude={donation.latitude} longitude={donation.longitude} matches={matches} onSelect={accept} />}
       <div className="match-list">
         {donation && matches.map((match, index) => (
           <MatchCard key={match.id} match={match} donation={donation} best={index === 0} onAccept={accept} accepting={accepting} />

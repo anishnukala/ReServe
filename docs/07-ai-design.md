@@ -1,34 +1,5 @@
-# AI Design
+# AI design
 
-AI is optional and limited to extracting explicit facts from donor descriptions.
+ReServe runs `Xenova/all-MiniLM-L6-v2` through Transformers.js on the server. The model creates normalized sentence embeddings and cosine similarity supplies one bounded ranking signal.
 
-Example:
-
-```text
-"We have about 35 pounds of vegetarian pasta from an event. It is refrigerated."
-```
-
-Possible structured fields:
-
-```json
-{
-  "foodName": "vegetarian pasta",
-  "foodCategory": "prepared_food",
-  "quantityLbs": 35,
-  "storageType": "refrigerated",
-  "dietaryTags": ["vegetarian"]
-}
-```
-
-## Safety boundary
-
-The model must not infer or certify:
-
-- expiration
-- allergens not stated by the donor
-- safe internal temperature
-- whether food is wholesome
-- legal compliance
-- whether the donation should be eaten
-
-The donor verifies safety-critical information. The recipient independently decides whether to accept the food.
+Semantic similarity never controls food safety and cannot bypass eligibility. Allergens, preparation time, deadline, storage, and safety confirmation come from donor-entered fields. The application does not send donation or organization data to a paid AI provider.

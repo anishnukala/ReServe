@@ -1,0 +1,6 @@
+import { NextResponse } from "next/server";
+import { requireUser } from "@/lib/auth/session";
+import { getMongoDatabase } from "@/lib/mongodb/client";
+import { getCollections } from "@/lib/mongodb/collections";
+import { mapOrganizationDocument } from "@/lib/mongodb/mappers";
+export async function GET() { try { const auth = await requireUser(["admin"]); if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status }); const db = await getMongoDatabase(); if (!db) return NextResponse.json({ error: "MongoDB is not configured." }, { status: 503 }); const collections = getCollections(db); const [users, organizations] = await Promise.all([collections.users.find({}).sort({ createdAt: -1 }).limit(200).toArray(), collections.organizations.find({}).sort({ updatedAt: -1 }).limit(200).toArray()]); return NextResponse.json({ users: users.map((user) => ({ id: user._id, name: user.name, email: user.email, phone: user.phone || null, role: user.role, status: user.status, organizationId: user.organizationId || null, createdAt: user.createdAt.toISOString(), updatedAt: user.updatedAt.toISOString() })), organizations: organizations.map(mapOrganizationDocument) }); } catch (error) { console.error(error); return NextResponse.json({ error: "Unable to load administration data." }, { status: 500 }); } }

@@ -1,32 +1,11 @@
 "use client";
-
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ImpactStats, type ImpactData } from "@/components/dashboard/ImpactStats";
+import { InsightsCharts, type CategoryData, type TrendsData } from "@/components/dashboard/InsightsCharts";
 import { PageHero } from "@/components/layout/PageHero";
-
 export default function DashboardPage() {
-  const [data, setData] = useState<ImpactData | null>(null);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    fetch("/api/dashboard/impact")
-      .then(async (r) => {
-        const body = await r.json();
-        if (!r.ok) throw new Error(body.error || "Unable to load impact");
-        return body;
-      })
-      .then(setData)
-      .catch((e) => setError(e instanceof Error ? e.message : "Unable to load impact"));
-  }, []);
-
-  return (
-    <div className="inner-page">
-      <PageHero eyebrow="Impact dashboard" title={<>Every rescue <span>adds up.</span></>} description="Follow the food recovered, meals created, and local connections made through the ReServe network." image="/impact-assets/fresh-produce-3d.png" imageAlt="A wooden crate filled with fresh produce" highlights={["Live network totals", "Completed rescues", "Transparent estimates"]} tone="sage" />
-      <section className="page-content"><div className="container">
-        <div className="section-title section-title--row"><div><p>Network performance</p><h2>Impact in motion</h2></div><span>Delivered rescues roll into every total below.</span></div>
-        {error && <p className="error">{error}</p>}
-        {!data ? <div className="loading">Loading impact…</div> : <ImpactStats data={data} />}
-      </div></section>
-    </div>
-  );
+  const router = useRouter(); const [range, setRange] = useState("30"); const [data, setData] = useState<ImpactData | null>(null); const [trends, setTrends] = useState<TrendsData | null>(null); const [categories, setCategories] = useState<CategoryData | null>(null); const [error, setError] = useState("");
+  useEffect(() => { setData(null); setError(""); Promise.all(["overview", "trends", "categories"].map((path) => fetch(`/api/statistics/${path}?range=${range}`))).then(async (responses) => { if (responses.some((response) => response.status === 401)) return router.replace("/login?next=/dashboard"); const bodies = await Promise.all(responses.map((response) => response.json())); const failed = responses.findIndex((response) => !response.ok); if (failed >= 0) throw new Error(bodies[failed].error || "Unable to load insights"); setData(bodies[0]); setTrends(bodies[1]); setCategories(bodies[2]); }).catch((reason) => setError(reason instanceof Error ? reason.message : "Unable to load insights")); }, [range, router]);
+  return <div className="inner-page"><PageHero eyebrow="Statistics & insights" title={<>Every rescue <span>adds up.</span></>} description="Review real impact, matching performance, and food trends from your ReServe activity." image="/impact-assets/fresh-produce-3d.png" imageAlt="A wooden crate filled with fresh produce" highlights={["MongoDB aggregates", "Role-based insights", "No prototype totals"]} tone="sage" /><section className="page-content"><div className="container"><div className="section-title section-title--row"><div><p>Impact dashboard</p><h2>Impact in motion</h2></div><label className="range-filter">Date range<select value={range} onChange={(event) => setRange(event.target.value)}><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option><option value="all">All time</option></select></label></div>{error && <p className="error">{error}</p>}{!data ? <div className="loading">Loading real impact data…</div> : <><ImpactStats data={data} /><div className="metric-strip"><span>Active donations <strong>{data.activeDonations}</strong></span><span>Average match score <strong>{data.averageMatchScore}%</strong></span><span>Average match time <strong>{data.averageMatchMinutes} min</strong></span><span>Average pickup time <strong>{data.averagePickupMinutes} min</strong></span></div>{trends && categories && <InsightsCharts trends={trends} categories={categories} />}</>}</div></section></div>;
 }

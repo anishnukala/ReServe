@@ -1,0 +1,7 @@
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { requireUser } from "@/lib/auth/session";
+import { getMongoDatabase } from "@/lib/mongodb/client";
+import { getCollections } from "@/lib/mongodb/collections";
+const schema = z.object({ verified: z.boolean().optional(), status: z.enum(["ACTIVE", "PAUSED", "DISABLED", "INCOMPLETE"]).optional() }).refine((value) => value.verified !== undefined || value.status !== undefined, "Provide a field to update.");
+export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) { try { const auth = await requireUser(["admin"]); if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status }); const input = schema.parse(await request.json()); const { id } = await context.params; const db = await getMongoDatabase(); if (!db) return NextResponse.json({ error: "MongoDB is not configured." }, { status: 503 }); const result = await getCollections(db).organizations.updateOne({ _id: id }, { $set: { ...input, updatedAt: new Date() } }); if (!result.matchedCount) return NextResponse.json({ error: "Organization not found." }, { status: 404 }); return NextResponse.json({ id, ...input }); } catch (error) { if (error instanceof z.ZodError) return NextResponse.json({ error: error.issues[0]?.message || "Invalid organization status." }, { status: 400 }); console.error(error); return NextResponse.json({ error: "Unable to update organization." }, { status: 500 }); } }

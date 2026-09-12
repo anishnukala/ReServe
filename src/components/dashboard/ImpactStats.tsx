@@ -5,6 +5,13 @@ export interface ImpactData {
   estimatedMeals: number;
   completedRescues: number;
   averageMatchMinutes: number;
+  activeDonations: number;
+  successfulMatchRate: number;
+  averageMatchScore: number;
+  averagePickupMinutes: number;
+  averageDonationSize: number;
+  activeFoodOrganizations: number;
+  activeDonorOrganizations: number;
 }
 
 export function ImpactStats({ data }: { data: ImpactData }) {
@@ -12,7 +19,7 @@ export function ImpactStats({ data }: { data: ImpactData }) {
     { label: "Food rescued", value: `${data.foodRescuedLbs.toLocaleString()} lbs`, icon: PackageCheck, tone: "green" },
     { label: "Estimated meals", value: data.estimatedMeals.toLocaleString(), icon: Utensils, tone: "orange" },
     { label: "Completed rescues", value: data.completedRescues.toLocaleString(), icon: HandHeart, tone: "leaf" },
-    { label: "Average match time", value: `${data.averageMatchMinutes} min`, icon: Clock3, tone: "sage" },
+    { label: "Successful match rate", value: `${data.successfulMatchRate}%`, icon: Clock3, tone: "sage" },
   ];
 
   return (

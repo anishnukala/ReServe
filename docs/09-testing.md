@@ -1,29 +1,14 @@
-# Testing Plan
+# Testing
 
-## Matching cases
+Unit tests verify that hard filters reject incompatible capacity and storage, matching weights sum to one, and higher current need and semantic fit improve ranking. Type checking covers API contracts and map components. A production build verifies server/client boundaries and route generation.
 
-- normal donation
-- expired donation
-- no compatible recipient
-- oversized donation
-- refrigerated food
-- frozen food
-- unsupported category
-- recipient closed
-- outside pickup radius
-- missing data
+Run:
 
-## API validation
+```bash
+npm test
+npm exec -- tsc --noEmit --incremental false
+npm run build
+npm audit --audit-level=high
+```
 
-- invalid coordinates
-- invalid quantities
-- past deadlines
-- missing donor safety confirmation
-- external API failure
-
-## Service resilience
-
-- return a configuration error without MongoDB
-- return a configuration error without Google Places
-- use deterministic extraction without OpenAI
-- preserve transaction consistency when a workflow update fails
+Atlas setup is verified separately with `npm run db:setup` because it requires network access and valid credentials.

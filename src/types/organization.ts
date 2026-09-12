@@ -1,4 +1,10 @@
 export type StorageType = "ambient" | "refrigerated" | "frozen";
+export type UserRole = "restaurant" | "food_org" | "admin";
+
+export interface GeoPoint {
+  type: "Point";
+  coordinates: [longitude: number, latitude: number];
+}
 
 export type OrganizationType =
   | "RESTAURANT"
@@ -11,22 +17,36 @@ export type OrganizationType =
 
 export interface Organization {
   id: string;
-  googlePlaceId?: string | null;
+  ownerUserId?: string | null;
   name: string;
+  description?: string;
   type: OrganizationType;
   address: string;
   latitude: number;
   longitude: number;
   phone?: string | null;
+  acceptedCategories?: string[];
+  dietaryPreferences?: string[];
+  storageCapabilities?: StorageType[];
+  maximumCapacityLbs?: number;
+  availableCapacityLbs?: number;
+  pickupAvailable?: boolean;
+  receivingHours?: { openHour: number; closeHour: number };
+  rating?: number;
+  verified?: boolean;
+  status?: "ACTIVE" | "PAUSED" | "DISABLED" | "INCOMPLETE";
 }
 
-export interface RecipientPreference {
+export interface OrganizationNeed {
+  id: string;
   organizationId: string;
-  acceptedCategories: string[];
-  storageCapabilities: StorageType[];
-  capacityLbs: number;
-  pickupRadiusMiles: number;
-  needsScore: number;
-  openHour: number;
-  closeHour: number;
+  foodCategory: string;
+  desiredQuantityLbs: number;
+  currentQuantityLbs: number;
+  urgencyScore: number;
+  storageType: StorageType;
+  dietaryTags: string[];
+  neededUntil: string;
+  active: boolean;
+  updatedAt: string;
 }
