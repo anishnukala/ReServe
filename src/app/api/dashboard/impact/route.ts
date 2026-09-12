@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
-import { createServerClient } from "@/lib/supabase/server";
+import { getMongoDatabase } from "@/lib/mongodb/client";
+import { getCollections } from "@/lib/mongodb/collections";
 
 export async function GET() {
   try {
-    const supabase = createServerClient();
-    if (!supabase || process.env.DEMO_MODE === "true") {
+    const db = await getMongoDatabase();
+    if (!db) {
       return NextResponse.json({
         foodRescuedLbs: 327,
         estimatedMeals: 273,
@@ -14,13 +15,17 @@ export async function GET() {
       });
     }
 
-    const { data, error } = await supabase.from("rescues").select("quantity_rescued").eq("status", "DELIVERED");
-    if (error) throw error;
-    const foodRescuedLbs = Number((data ?? []).reduce((sum, row) => sum + Number(row.quantity_rescued || 0), 0).toFixed(1));
+    const { rescues } = getCollections(db);
+    const totals = await rescues.aggregate<{ foodRescuedLbs: number; completedRescues: number }>([
+      { $match: { status: "DELIVERED" } },
+      { $group: { _id: null, foodRescuedLbs: { $sum: "$quantityRescued" }, completedRescues: { $sum: 1 } } },
+      { $project: { _id: 0, foodRescuedLbs: 1, completedRescues: 1 } },
+    ]).next();
+    const foodRescuedLbs = Number((totals?.foodRescuedLbs ?? 0).toFixed(1));
     return NextResponse.json({
       foodRescuedLbs,
       estimatedMeals: Math.round(foodRescuedLbs / 1.2),
-      completedRescues: data?.length ?? 0,
+      completedRescues: totals?.completedRescues ?? 0,
       averageMatchMinutes: 0,
       demo: false,
     });

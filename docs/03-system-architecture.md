@@ -15,7 +15,7 @@ Next.js App Router
   ├── Google Places adapter
   └── Optional OpenAI extraction
   │
-Supabase PostgreSQL
+MongoDB
 ```
 
 ## Responsibilities
@@ -33,13 +33,15 @@ Supabase PostgreSQL
 - scoring
 - explanations
 
-### Supabase
+### MongoDB
 
 - organizations
 - recipient preferences
 - donations
 - matches
 - rescues
+
+The server uses one shared MongoDB connection pool. Multi-collection workflow updates run in transactions, while collection validators and indexes are installed by `npm run db:setup`.
 
 ### Google Places
 

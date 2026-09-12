@@ -42,7 +42,7 @@ Impact dashboard updates
 - Next.js + TypeScript
 - React
 - Tailwind CSS + project-level CSS
-- Supabase PostgreSQL
+- MongoDB with the official Node.js driver
 - Google Places API (New)
 - OpenAI API (optional)
 - Vitest
@@ -90,7 +90,7 @@ The project starts in demo mode by default:
 DEMO_MODE=true
 ```
 
-No Supabase, Google, or OpenAI keys are required in demo mode.
+No MongoDB, Google, or OpenAI keys are required in demo mode.
 
 ### 3. Run locally
 
@@ -100,23 +100,34 @@ npm run dev
 
 Open `http://localhost:3000`.
 
-## Enable Supabase
+## Enable MongoDB
 
-1. Create a Supabase project.
-2. Run `supabase/schema.sql` in the SQL editor.
-3. Run `supabase/seed.sql` for fictional demo organizations.
-4. Set:
+1. Create a MongoDB Atlas cluster or another MongoDB deployment that supports transactions.
+2. Add the connection settings to `.env.local`:
 
 ```env
 DEMO_MODE=false
-NEXT_PUBLIC_SUPABASE_URL=...
-NEXT_PUBLIC_SUPABASE_ANON_KEY=...
-SUPABASE_SERVICE_ROLE_KEY=...
+MONGODB_URI=mongodb+srv://...
+MONGODB_DB=reserve
 ```
 
-The service-role key must remain server-side. Never expose it to browser code.
+3. Initialize collections, validation rules, indexes, and the fictional starter organizations:
 
-Before production, add Supabase authentication, Row Level Security, organization ownership, audit logging, and reviewed database policies.
+```bash
+npm run db:setup
+```
+
+`MONGODB_URI` is server-only. Never prefix it with `NEXT_PUBLIC_` or expose it to browser code.
+
+To copy rows from an existing Supabase project, temporarily add its URL and service-role key to `.env.local`, run the setup command, then run:
+
+```bash
+npm run db:migrate:supabase
+```
+
+The importer is idempotent and preserves existing string IDs. Remove the Supabase credentials after the migration succeeds.
+
+Before production, add authentication, organization ownership checks, audit logging, and reviewed database access controls.
 
 ## Enable Google Places
 
@@ -128,7 +139,7 @@ GOOGLE_MAPS_API_KEY=...
 
 The `/organizations` page calls the official Places Text Search endpoint through a Next.js server route. ReServe-specific data such as accepted foods, capacity, storage capability, need, and verification status should remain in your own database.
 
-Do not treat Google Places as a bulk business directory or scrape it into Supabase. Review Google's current Maps Platform terms before production use.
+Do not treat Google Places as a bulk business directory or scrape it into MongoDB. Review Google's current Maps Platform terms before production use.
 
 ## Enable OpenAI extraction
 
@@ -141,7 +152,7 @@ OPENAI_MODEL=your-supported-model
 
 AI must not infer or certify expiration, allergens, storage temperature, safety, or legal compliance. Those fields should be confirmed by the donor and recipient.
 
-## Database tables
+## Database collections
 
 ```text
 organizations
@@ -151,7 +162,7 @@ matches
 rescues
 ```
 
-See `docs/04-data-model.md` and `supabase/schema.sql`.
+See `docs/04-data-model.md` and `scripts/mongodb/setup.mjs`.
 
 ## Project structure
 
@@ -176,7 +187,8 @@ reserve/
 │   ├── data/
 │   ├── lib/
 │   └── types/
-├── supabase/
+├── scripts/
+│   └── mongodb/
 ├── tests/
 ├── .env.example
 ├── package.json

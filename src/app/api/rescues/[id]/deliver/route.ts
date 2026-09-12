@@ -1,28 +1,37 @@
 import { NextResponse } from "next/server";
 import type { Rescue } from "@/types/rescue";
-import { createServerClient } from "@/lib/supabase/server";
+import { getMongoClient } from "@/lib/mongodb/client";
+import { getCollections } from "@/lib/mongodb/collections";
+import { mapRescueDocument } from "@/lib/mongodb/mappers";
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await context.params;
     const body = (await request.json()) as { rescue?: Rescue };
-    const deliveredAt = new Date().toISOString();
-    const supabase = createServerClient();
+    const deliveredAt = new Date();
+    const client = await getMongoClient();
 
-    if (!supabase || process.env.DEMO_MODE === "true") {
+    if (!client) {
       if (!body.rescue) return NextResponse.json({ error: "Rescue data is required in demo mode." }, { status: 400 });
-      return NextResponse.json({ rescue: { ...body.rescue, id, status: "DELIVERED", deliveredAt } });
+      return NextResponse.json({ rescue: { ...body.rescue, id, status: "DELIVERED", deliveredAt: deliveredAt.toISOString() } });
     }
 
-    const { data, error } = await supabase.from("rescues").update({ status: "DELIVERED", delivered_at: deliveredAt }).eq("id", id).select("*").single();
-    if (error) throw error;
-    await supabase.from("donations").update({ status: "DELIVERED" }).eq("id", data.donation_id);
+    const collections = getCollections(client.db(process.env.MONGODB_DB || "reserve"));
+    const rescue = await collections.rescues.findOne({ _id: id });
+    if (!rescue) return NextResponse.json({ error: "Rescue not found." }, { status: 404 });
+    if (rescue.status === "ACCEPTED") return NextResponse.json({ error: "Mark the rescue as picked up before delivery." }, { status: 409 });
 
-    return NextResponse.json({ rescue: {
-      id: data.id, donationId: data.donation_id, recipientOrgId: data.recipient_org_id,
-      status: data.status, acceptedAt: data.accepted_at, pickedUpAt: data.picked_up_at,
-      deliveredAt: data.delivered_at, quantityRescued: Number(data.quantity_rescued),
-    }});
+    const session = client.startSession();
+    try {
+      await session.withTransaction(async () => {
+        await collections.rescues.updateOne({ _id: id }, { $set: { status: "DELIVERED", deliveredAt } }, { session });
+        await collections.donations.updateOne({ _id: rescue.donationId }, { $set: { status: "DELIVERED" } }, { session });
+      });
+    } finally {
+      await session.endSession();
+    }
+
+    return NextResponse.json({ rescue: mapRescueDocument({ ...rescue, status: "DELIVERED", deliveredAt }) });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: "Unable to mark delivery." }, { status: 500 });

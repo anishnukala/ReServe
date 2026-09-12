@@ -6,14 +6,15 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "vitest run"
+    "test": "vitest run",
+    "db:setup": "node --env-file=.env.local scripts/mongodb/setup.mjs",
+    "db:migrate:supabase": "node --env-file=.env.local scripts/mongodb/migrate-from-supabase.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "latest",
-    "@supabase/ssr": "latest",
-    "@supabase/supabase-js": "latest",
     "clsx": "latest",
     "lucide-react": "latest",
+    "mongodb": "^7.6.0",
     "next": "latest",
     "openai": "latest",
     "react": "latest",

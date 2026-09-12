@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import type { Donation } from "@/types/donation";
 import type { MatchResult } from "@/types/match";
-import { createServerClient } from "@/lib/supabase/server";
+import { getMongoClient } from "@/lib/mongodb/client";
+import { getCollections, type RescueDocument } from "@/lib/mongodb/collections";
+import { mapRescueDocument } from "@/lib/mongodb/mappers";
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
@@ -9,17 +11,17 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     const body = (await request.json()) as { match?: MatchResult; donation?: Donation };
     if (!body.match || !body.donation) return NextResponse.json({ error: "Match and donation are required." }, { status: 400 });
 
-    const acceptedAt = new Date().toISOString();
-    const supabase = createServerClient();
+    const acceptedAt = new Date();
+    const client = await getMongoClient();
 
-    if (!supabase || process.env.DEMO_MODE === "true") {
+    if (!client) {
       return NextResponse.json({
         rescue: {
           id: `rescue-${Date.now()}`,
           donationId: body.donation.id,
           recipientOrgId: body.match.recipient.id,
           status: "ACCEPTED",
-          acceptedAt,
+          acceptedAt: acceptedAt.toISOString(),
           pickedUpAt: null,
           deliveredAt: null,
           quantityRescued: body.donation.quantityLbs,
@@ -28,35 +30,39 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       });
     }
 
-    const rescueId = `rescue-${crypto.randomUUID()}`;
-    const [{ error: matchError }, { error: donationError }, { data: rescue, error: rescueError }] = await Promise.all([
-      supabase.from("matches").update({ status: "ACCEPTED" }).eq("id", id),
-      supabase.from("donations").update({ status: "ACCEPTED" }).eq("id", body.donation.id),
-      supabase.from("rescues").insert({
-        id: rescueId,
-        donation_id: body.donation.id,
-        recipient_org_id: body.match.recipient.id,
-        accepted_at: acceptedAt,
-        quantity_rescued: body.donation.quantityLbs,
-        status: "ACCEPTED",
-      }).select("*").single(),
+    const collections = getCollections(client.db(process.env.MONGODB_DB || "reserve"));
+    const [storedMatch, storedDonation, existingRescue] = await Promise.all([
+      collections.matches.findOne({ _id: id, donationId: body.donation.id }),
+      collections.donations.findOne({ _id: body.donation.id }),
+      collections.rescues.findOne({ donationId: body.donation.id }),
     ]);
-    if (matchError) throw matchError;
-    if (donationError) throw donationError;
-    if (rescueError) throw rescueError;
+    if (!storedMatch || !storedDonation) {
+      return NextResponse.json({ error: "Match or donation not found." }, { status: 404 });
+    }
+    if (existingRescue) return NextResponse.json({ rescue: mapRescueDocument(existingRescue) });
 
-    return NextResponse.json({
-      rescue: {
-        id: rescue.id,
-        donationId: rescue.donation_id,
-        recipientOrgId: rescue.recipient_org_id,
-        status: rescue.status,
-        acceptedAt: rescue.accepted_at,
-        pickedUpAt: rescue.picked_up_at,
-        deliveredAt: rescue.delivered_at,
-        quantityRescued: Number(rescue.quantity_rescued),
-      },
-    });
+    const rescue: RescueDocument = {
+      _id: `rescue-${crypto.randomUUID()}`,
+      donationId: storedDonation._id,
+      recipientOrgId: storedMatch.recipientOrgId,
+      status: "ACCEPTED",
+      acceptedAt,
+      pickedUpAt: null,
+      deliveredAt: null,
+      quantityRescued: storedDonation.quantityLbs,
+    };
+    const session = client.startSession();
+    try {
+      await session.withTransaction(async () => {
+        await collections.matches.updateOne({ _id: id }, { $set: { status: "ACCEPTED" } }, { session });
+        await collections.donations.updateOne({ _id: storedDonation._id }, { $set: { status: "ACCEPTED" } }, { session });
+        await collections.rescues.insertOne(rescue, { session });
+      });
+    } finally {
+      await session.endSession();
+    }
+
+    return NextResponse.json({ rescue: mapRescueDocument(rescue) });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: "Unable to accept match." }, { status: 500 });

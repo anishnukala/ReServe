@@ -3,6 +3,13 @@ import { rankRecipients } from "@/lib/matching/matcher";
 import { demoOrganizations, demoPreferences } from "@/data/demo-organizations";
 import type { Donation } from "@/types/donation";
 
+function futurePickupDeadline() {
+  const deadline = new Date();
+  deadline.setDate(deadline.getDate() + 1);
+  deadline.setHours(12, 0, 0, 0);
+  return deadline.toISOString();
+}
+
 function donation(overrides: Partial<Donation> = {}): Donation {
   return {
     id: "test-donation",
@@ -13,7 +20,7 @@ function donation(overrides: Partial<Donation> = {}): Donation {
     allergens: ["wheat"],
     dietaryTags: ["vegetarian"],
     preparedAt: null,
-    pickupDeadline: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+    pickupDeadline: futurePickupDeadline(),
     latitude: 42.0266,
     longitude: -93.6465,
     status: "AVAILABLE",

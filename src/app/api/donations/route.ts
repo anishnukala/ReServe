@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createServerClient } from "@/lib/supabase/server";
+import { getMongoDatabase } from "@/lib/mongodb/client";
+import { getCollections, type DonationDocument } from "@/lib/mongodb/collections";
+import { mapDonationDocument } from "@/lib/mongodb/mappers";
 
 const donationSchema = z.object({
   foodName: z.string().min(2).max(120),
@@ -19,66 +21,46 @@ const donationSchema = z.object({
 export async function POST(request: Request) {
   try {
     const body = donationSchema.parse(await request.json());
-    const now = new Date().toISOString();
+    const now = new Date();
 
     if (new Date(body.pickupDeadline).getTime() <= Date.now()) {
       return NextResponse.json({ error: "Pickup deadline must be in the future." }, { status: 400 });
     }
 
-    const supabase = createServerClient();
-    if (!supabase || process.env.DEMO_MODE === "true") {
+    const db = await getMongoDatabase();
+    if (!db) {
       return NextResponse.json({
         donation: {
           id: `demo-${Date.now()}`,
           donorOrgId: null,
           ...body,
           status: "AVAILABLE",
-          createdAt: now,
+          createdAt: now.toISOString(),
         },
         demo: true,
       });
     }
 
-    const { data, error } = await supabase
-      .from("donations")
-      .insert({
-        food_name: body.foodName,
-        food_category: body.foodCategory,
-        quantity_lbs: body.quantityLbs,
-        storage_type: body.storageType,
+    const donation: DonationDocument = {
+        _id: crypto.randomUUID(),
+        donorOrgId: null,
+        foodName: body.foodName,
+        foodCategory: body.foodCategory,
+        quantityLbs: body.quantityLbs,
+        storageType: body.storageType,
         allergens: body.allergens,
-        dietary_tags: body.dietaryTags,
-        prepared_at: body.preparedAt ?? null,
-        pickup_deadline: body.pickupDeadline,
+        dietaryTags: body.dietaryTags,
+        preparedAt: body.preparedAt ? new Date(body.preparedAt) : null,
+        pickupDeadline: new Date(body.pickupDeadline),
         latitude: body.latitude,
         longitude: body.longitude,
-        donor_safety_confirmed: body.donorSafetyConfirmed,
+        donorSafetyConfirmed: body.donorSafetyConfirmed,
         status: "AVAILABLE",
-      })
-      .select("*")
-      .single();
+        createdAt: now,
+    };
 
-    if (error) throw error;
-
-    return NextResponse.json({
-      donation: {
-        id: data.id,
-        donorOrgId: data.donor_org_id,
-        foodName: data.food_name,
-        foodCategory: data.food_category,
-        quantityLbs: Number(data.quantity_lbs),
-        storageType: data.storage_type,
-        allergens: data.allergens ?? [],
-        dietaryTags: data.dietary_tags ?? [],
-        preparedAt: data.prepared_at,
-        pickupDeadline: data.pickup_deadline,
-        latitude: Number(data.latitude),
-        longitude: Number(data.longitude),
-        status: data.status,
-        createdAt: data.created_at,
-        donorSafetyConfirmed: Boolean(data.donor_safety_confirmed),
-      },
-    });
+    await getCollections(db).donations.insertOne(donation);
+    return NextResponse.json({ donation: mapDonationDocument(donation) });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues[0]?.message ?? "Invalid donation." }, { status: 400 });
