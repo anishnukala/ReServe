@@ -8,6 +8,8 @@
     "start": "next start",
     "test": "vitest run",
     "db:setup": "node --env-file=.env.local scripts/mongodb/setup.mjs",
+    "db:local:start": "docker compose up -d --wait mongodb",
+    "db:local:stop": "docker compose stop mongodb",
     "account:create-vendor": "node --env-file=.env.local scripts/accounts/create-food-vendor.mjs"
   },
   "dependencies": {

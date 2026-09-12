@@ -26,6 +26,17 @@ npm run dev
 
 Set a random `JWT_SECRET` of at least 32 characters. The first AI search downloads and caches the embedding model, so it can take longer than later searches.
 
+### Local Atlas deployment
+
+With Docker Desktop running, start the official MongoDB Atlas Local image and initialize ReServe:
+
+```bash
+npm run db:local:start
+npm run db:setup
+```
+
+Use `MONGODB_URI=mongodb://127.0.0.1:27017/?directConnection=true` in `.env.local`. Data persists in Docker volumes. Stop the service with `npm run db:local:stop`.
+
 ## Environment
 
 ```dotenv

@@ -1,0 +1,20 @@
+services:
+  mongodb:
+    image: mongodb/mongodb-atlas-local:latest
+    container_name: reserve-atlas-local
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - reserve-atlas-data:/data/db
+      - reserve-atlas-config:/data/configdb
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand({ ping: 1 }).ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 24
+      start_period: 20s
+    restart: unless-stopped
+
+volumes:
+  reserve-atlas-data:
+  reserve-atlas-config:
