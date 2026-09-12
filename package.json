@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "test": "vitest run",
-    "db:setup": "node --env-file=.env.local scripts/mongodb/setup.mjs"
+    "db:setup": "node --env-file=.env.local scripts/mongodb/setup.mjs",
+    "account:create-vendor": "node --env-file=.env.local scripts/accounts/create-food-vendor.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "latest",

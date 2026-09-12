@@ -36,6 +36,14 @@ JWT_SECRET=replace-with-a-random-secret-at-least-32-characters
 
 All values are server-only. Do not prefix them with `NEXT_PUBLIC_`.
 
+## Create a food-vendor account from the terminal
+
+```bash
+npm run account:create-vendor
+```
+
+The command prompts for the vendor name, email, optional phone, and a masked password. It creates an active `restaurant` account and rejects duplicate normalized email addresses. Run `npm run account:create-vendor -- --help` for noninteractive options.
+
 ## Workflow
 
 1. A restaurant account creates a donor-confirmed donation and pickup point.
