@@ -1,20 +1,16 @@
 import { NextResponse } from "next/server";
-import type { Donation } from "@/types/donation";
-import type { Rescue } from "@/types/rescue";
 import { getMongoClient } from "@/lib/mongodb/client";
 import { getCollections } from "@/lib/mongodb/collections";
 import { mapRescueDocument } from "@/lib/mongodb/mappers";
 
-export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+export async function POST(_request: Request, context: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await context.params;
-    const body = (await request.json()) as { rescue?: Rescue; donation?: Donation | null };
     const pickedUpAt = new Date();
     const client = await getMongoClient();
 
     if (!client) {
-      if (!body.rescue) return NextResponse.json({ error: "Rescue data is required in demo mode." }, { status: 400 });
-      return NextResponse.json({ rescue: { ...body.rescue, id, status: "PICKED_UP", pickedUpAt: pickedUpAt.toISOString() } });
+      return NextResponse.json({ error: "MongoDB is not configured." }, { status: 503 });
     }
 
     const collections = getCollections(client.db(process.env.MONGODB_DB || "reserve"));

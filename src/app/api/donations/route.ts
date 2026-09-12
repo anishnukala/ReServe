@@ -29,16 +29,7 @@ export async function POST(request: Request) {
 
     const db = await getMongoDatabase();
     if (!db) {
-      return NextResponse.json({
-        donation: {
-          id: `demo-${Date.now()}`,
-          donorOrgId: null,
-          ...body,
-          status: "AVAILABLE",
-          createdAt: now.toISOString(),
-        },
-        demo: true,
-      });
+      return NextResponse.json({ error: "MongoDB is not configured." }, { status: 503 });
     }
 
     const donation: DonationDocument = {
@@ -67,5 +58,23 @@ export async function POST(request: Request) {
     }
     console.error(error);
     return NextResponse.json({ error: "Unable to create donation." }, { status: 500 });
+  }
+}
+
+export async function GET() {
+  try {
+    const db = await getMongoDatabase();
+    if (!db) return NextResponse.json({ error: "MongoDB is not configured." }, { status: 503 });
+
+    const documents = await getCollections(db).donations
+      .find({ status: { $in: ["AVAILABLE", "MATCHED"] } })
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .toArray();
+
+    return NextResponse.json({ donations: documents.map(mapDonationDocument) });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: "Unable to load donations." }, { status: 500 });
   }
 }

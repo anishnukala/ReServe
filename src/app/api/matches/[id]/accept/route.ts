@@ -15,19 +15,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     const client = await getMongoClient();
 
     if (!client) {
-      return NextResponse.json({
-        rescue: {
-          id: `rescue-${Date.now()}`,
-          donationId: body.donation.id,
-          recipientOrgId: body.match.recipient.id,
-          status: "ACCEPTED",
-          acceptedAt: acceptedAt.toISOString(),
-          pickedUpAt: null,
-          deliveredAt: null,
-          quantityRescued: body.donation.quantityLbs,
-        },
-        demo: true,
-      });
+      return NextResponse.json({ error: "MongoDB is not configured." }, { status: 503 });
     }
 
     const collections = getCollections(client.db(process.env.MONGODB_DB || "reserve"));

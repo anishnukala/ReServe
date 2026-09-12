@@ -1,7 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { rankRecipients } from "@/lib/matching/matcher";
-import { demoOrganizations, demoPreferences } from "@/data/demo-organizations";
 import type { Donation } from "@/types/donation";
+import type { Organization, RecipientPreference } from "@/types/organization";
+
+const organizations: Organization[] = [
+  { id: "recipient-a", name: "Recipient A", type: "FOOD_PANTRY", address: "Ames, IA", latitude: 42.0308, longitude: -93.6319 },
+  { id: "recipient-b", name: "Recipient B", type: "NONPROFIT", address: "Ames, IA", latitude: 42.0224, longitude: -93.6171 },
+];
+
+const preferences: RecipientPreference[] = [
+  { organizationId: "recipient-a", acceptedCategories: ["prepared_food"], storageCapabilities: ["refrigerated"], capacityLbs: 120, pickupRadiusMiles: 12, needsScore: 90, openHour: 8, closeHour: 20 },
+  { organizationId: "recipient-b", acceptedCategories: ["prepared_food"], storageCapabilities: ["refrigerated"], capacityLbs: 80, pickupRadiusMiles: 12, needsScore: 75, openHour: 8, closeHour: 20 },
+];
 
 function futurePickupDeadline() {
   const deadline = new Date();
@@ -32,7 +42,7 @@ function donation(overrides: Partial<Donation> = {}): Donation {
 
 describe("rankRecipients", () => {
   it("returns at most three ranked feasible recipients", () => {
-    const results = rankRecipients(donation(), demoOrganizations, demoPreferences);
+    const results = rankRecipients(donation(), organizations, preferences);
     expect(results.length).toBeGreaterThan(0);
     expect(results.length).toBeLessThanOrEqual(3);
     for (let i = 1; i < results.length; i++) {
@@ -41,12 +51,12 @@ describe("rankRecipients", () => {
   });
 
   it("filters recipients that cannot hold the donation", () => {
-    const results = rankRecipients(donation({ quantityLbs: 500 }), demoOrganizations, demoPreferences);
+    const results = rankRecipients(donation({ quantityLbs: 500 }), organizations, preferences);
     expect(results).toHaveLength(0);
   });
 
   it("filters expired donations", () => {
-    const results = rankRecipients(donation({ pickupDeadline: new Date(Date.now() - 60_000).toISOString() }), demoOrganizations, demoPreferences);
+    const results = rankRecipients(donation({ pickupDeadline: new Date(Date.now() - 60_000).toISOString() }), organizations, preferences);
     expect(results).toHaveLength(0);
   });
 });

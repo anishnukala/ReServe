@@ -6,13 +6,7 @@ export async function GET() {
   try {
     const db = await getMongoDatabase();
     if (!db) {
-      return NextResponse.json({
-        foodRescuedLbs: 327,
-        estimatedMeals: 273,
-        completedRescues: 14,
-        averageMatchMinutes: 2.4,
-        demo: true,
-      });
+      return NextResponse.json({ error: "MongoDB is not configured." }, { status: 503 });
     }
 
     const { rescues } = getCollections(db);
@@ -27,7 +21,6 @@ export async function GET() {
       estimatedMeals: Math.round(foodRescuedLbs / 1.2),
       completedRescues: totals?.completedRescues ?? 0,
       averageMatchMinutes: 0,
-      demo: false,
     });
   } catch (error) {
     console.error(error);

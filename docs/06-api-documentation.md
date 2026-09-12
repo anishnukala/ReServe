@@ -6,7 +6,7 @@ Creates a donation.
 
 ## POST /api/donations/:id/match
 
-Runs feasibility filters and ranking. In demo mode, the client includes the donation object in the request body.
+Loads the donation and recipient preferences from MongoDB, then runs feasibility filters and ranking.
 
 ## POST /api/matches/:id/accept
 
@@ -26,7 +26,7 @@ Returns total delivered food, estimated meals, rescue count, and average match t
 
 ## POST /api/places/search
 
-Server-side Google Places Text Search adapter. Falls back to fictional organizations in demo mode.
+Server-side Google Places Text Search adapter. Returns a configuration error when the Google API key is unavailable.
 
 ## POST /api/ai/extract-food
 

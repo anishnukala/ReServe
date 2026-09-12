@@ -7,7 +7,7 @@ const globalForMongo = globalThis as typeof globalThis & {
 };
 
 export function isMongoConfigured() {
-  return process.env.DEMO_MODE !== "true" && Boolean(process.env.MONGODB_URI);
+  return Boolean(process.env.MONGODB_URI);
 }
 
 async function connectClient() {

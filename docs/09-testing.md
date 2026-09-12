@@ -21,9 +21,9 @@
 - missing donor safety confirmation
 - external API failure
 
-## Demo resilience
+## Service resilience
 
-- run with `DEMO_MODE=true`
-- run without Google API
-- run without OpenAI API
-- keep a backup screen recording for the competition
+- return a configuration error without MongoDB
+- return a configuration error without Google Places
+- use deterministic extraction without OpenAI
+- preserve transaction consistency when a workflow update fails

@@ -25,7 +25,7 @@ export default function DashboardPage() {
       <section className="page-content"><div className="container">
         <div className="section-title section-title--row"><div><p>Network performance</p><h2>Impact in motion</h2></div><span>Delivered rescues roll into every total below.</span></div>
         {error && <p className="error">{error}</p>}
-        {!data ? <div className="loading">Loading impact…</div> : <>{data.demo && <div className="notice notice--compact">Prototype simulation: these values are illustrative demo data.</div>}<ImpactStats data={data} /></>}
+        {!data ? <div className="loading">Loading impact…</div> : <ImpactStats data={data} />}
       </div></section>
     </div>
   );

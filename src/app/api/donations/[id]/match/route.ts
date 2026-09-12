@@ -1,51 +1,38 @@
 import { NextResponse } from "next/server";
-import type { Donation } from "@/types/donation";
 import type { Organization, RecipientPreference } from "@/types/organization";
-import { demoOrganizations, demoPreferences } from "@/data/demo-organizations";
 import { rankRecipients } from "@/lib/matching/matcher";
 import { getMongoDatabase } from "@/lib/mongodb/client";
 import { getCollections } from "@/lib/mongodb/collections";
 import { mapDonationDocument, mapOrganizationDocument, mapPreferenceDocument } from "@/lib/mongodb/mappers";
 
-export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+export async function POST(_request: Request, context: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await context.params;
-    const body = await request.json().catch(() => ({}));
-    let donation = body.donation as Donation | null | undefined;
     const db = await getMongoDatabase();
+    if (!db) return NextResponse.json({ error: "MongoDB is not configured." }, { status: 503 });
 
-    if (db) {
-      const document = await getCollections(db).donations.findOne({ _id: id });
-      if (!document) return NextResponse.json({ error: "Donation not found." }, { status: 404 });
-      donation = mapDonationDocument(document);
-    }
+    const document = await getCollections(db).donations.findOne({ _id: id });
+    if (!document) return NextResponse.json({ error: "Donation not found." }, { status: 404 });
+    const donation = mapDonationDocument(document);
 
-    if (!donation) return NextResponse.json({ error: "Donation data is required in demo mode." }, { status: 400 });
-
-    let organizations: Organization[] = demoOrganizations;
-    let preferences: RecipientPreference[] = demoPreferences;
-
-    if (db) {
-      const collections = getCollections(db);
-      const [orgRows, prefRows] = await Promise.all([
-        collections.organizations.find().toArray(),
-        collections.recipientPreferences.find().toArray(),
-      ]);
-      organizations = orgRows.map(mapOrganizationDocument);
-      preferences = prefRows.map(mapPreferenceDocument);
-    }
+    const collections = getCollections(db);
+    const [orgRows, prefRows] = await Promise.all([
+      collections.organizations.find().toArray(),
+      collections.recipientPreferences.find().toArray(),
+    ]);
+    const organizations: Organization[] = orgRows.map(mapOrganizationDocument);
+    const preferences: RecipientPreference[] = prefRows.map(mapPreferenceDocument);
 
     const matches = rankRecipients(donation, organizations, preferences);
 
-    if (db && matches.length) {
-      const collections = getCollections(db);
+    if (matches.length) {
       const createdAt = new Date();
       await collections.matches.bulkWrite(matches.map((match) => ({
         updateOne: {
           filter: { _id: match.id },
           update: {
             $set: {
-              donationId: donation!.id,
+              donationId: donation.id,
               recipientOrgId: match.recipient.id,
               distanceMiles: match.distanceMiles,
               finalScore: match.finalScore,

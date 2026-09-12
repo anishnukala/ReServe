@@ -5,7 +5,6 @@ export interface ImpactData {
   estimatedMeals: number;
   completedRescues: number;
   averageMatchMinutes: number;
-  demo?: boolean;
 }
 
 export function ImpactStats({ data }: { data: ImpactData }) {

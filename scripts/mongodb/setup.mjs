@@ -1,4 +1,4 @@
-import { createMongoClient, organizationSeeds, preferenceSeeds, requireMongoConfig, upsertDocuments } from "./shared.mjs";
+import { createMongoClient, requireMongoConfig } from "./shared.mjs";
 
 const { uri, databaseName } = requireMongoConfig();
 const client = createMongoClient(uri);
@@ -40,11 +40,7 @@ try {
     db.collection("rescues").createIndex({ status: 1 }),
   ]);
 
-  const now = new Date();
-  await upsertDocuments(db.collection("organizations"), organizationSeeds.map((document) => ({ ...document, createdAt: now })));
-  await upsertDocuments(db.collection("recipient_preferences"), preferenceSeeds.map((document) => ({ ...document, updatedAt: now })));
-
-  console.log(`MongoDB database "${databaseName}" is initialized with indexes and seed organizations.`);
+  console.log(`MongoDB database "${databaseName}" is initialized with validators and indexes.`);
 } finally {
   await client.close();
 }

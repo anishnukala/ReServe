@@ -15,9 +15,9 @@
 
 ## Non-functional requirements
 
-- Fast enough for an interactive competition demo
+- Fast enough for an interactive donation workflow
 - Mobile-responsive
 - Explainable scoring
-- Runs without external services in demo mode
+- Reports clear configuration errors when required services are unavailable
 - External secrets remain server-side
-- Clear distinction between simulated and real data
+- Displays only persisted or live provider data

@@ -84,13 +84,7 @@ npm install
 cp .env.example .env.local
 ```
 
-The project starts in demo mode by default:
-
-```env
-DEMO_MODE=true
-```
-
-No MongoDB, Google, or OpenAI keys are required in demo mode.
+MongoDB is required for donation, matching, rescue, recipient, and impact data. Google Places and OpenAI remain optional integrations.
 
 ### 3. Run locally
 
@@ -106,12 +100,11 @@ Open `http://localhost:3000`.
 2. Add the connection settings to `.env.local`:
 
 ```env
-DEMO_MODE=false
 MONGODB_URI=mongodb+srv://...
 MONGODB_DB=reserve
 ```
 
-3. Initialize collections, validation rules, indexes, and the fictional starter organizations:
+3. Initialize collections, validation rules, and indexes:
 
 ```bash
 npm run db:setup
@@ -208,10 +201,6 @@ Current matching tests cover:
 - expired donations
 
 Add tests for storage mismatches, unsupported categories, no-match cases, closed recipients, and API validation before production.
-
-## Prototype data
-
-Organizations and dashboard values included in demo mode are fictional or simulated. Do not present them as real operating data.
 
 ## Product boundary
 

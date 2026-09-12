@@ -19,7 +19,7 @@ export default function OrganizationsPage() {
   const [places, setPlaces] = useState<Place[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [source, setSource] = useState<"google" | "demo" | "">("");
+  const [source, setSource] = useState<"google" | "">("");
 
   function locate() {
     setError("");
@@ -68,7 +68,6 @@ export default function OrganizationsPage() {
         {error && <p className="error">{error}</p>}
       </form>
 
-      {source === "demo" && <div className="notice notice--compact">Google API key is not configured, so this page is showing demo organizations.</div>}
       <div className="organization-results">
         {places.map((place) => (
           <article className="google-result" key={place.id}>

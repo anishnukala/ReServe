@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { demoOrganizations } from "@/data/demo-organizations";
 
 const schema = z.object({
   query: z.string().min(2).max(100),
@@ -14,17 +13,7 @@ export async function POST(request: Request) {
     const input = schema.parse(await request.json());
     const key = process.env.GOOGLE_MAPS_API_KEY;
 
-    if (!key || process.env.DEMO_MODE === "true") {
-      return NextResponse.json({
-        source: "demo",
-        places: demoOrganizations.map((org) => ({
-          id: `demo-${org.id}`,
-          displayName: { text: org.name },
-          formattedAddress: org.address,
-          location: { latitude: org.latitude, longitude: org.longitude },
-        })),
-      });
-    }
+    if (!key) return NextResponse.json({ error: "Google Places is not configured." }, { status: 503 });
 
     const response = await fetch("https://places.googleapis.com/v1/places:searchText", {
       method: "POST",

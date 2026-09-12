@@ -19,7 +19,7 @@ function fallback(description: string) {
 export async function POST(request: Request) {
   try {
     const { description } = schema.parse(await request.json());
-    if (!process.env.OPENAI_API_KEY || process.env.DEMO_MODE === "true") {
+    if (!process.env.OPENAI_API_KEY) {
       return NextResponse.json({ result: fallback(description), source: "fallback" });
     }
 
